@@ -1,0 +1,262 @@
+username=sam
+ip=120.117.72.12
+hostname=4A436044
+
+echo "
+#deb http://opensource.nchc.org.tw/debian/ stretch main contrib non-free
+#deb-src http://opensource.nchc.org.tw/debian/ stretch main contrib non-free
+#deb http://security.debian.org/debian-security stretch/updates main contrib non-free
+#deb-src http://security.debian.org/debian-security stretch/updates main contrib non-free
+#deb http://opensource.nchc.org.tw/debian/ stretch-updates main contrib non-free
+#deb-src http://opensource.nchc.org.tw/debian/ stretch-updates main contrib non-free
+deb ftp://120.117.72.71/debian/ stretch main contrib non-free" > /etc/apt/sources.list
+
+apt update -y
+apt upgrade -y
+
+
+apt install -y \
+xorg \
+icewm \
+gcin \
+libappindicator3-1 \
+aptitude \
+xfonts-intl-chinese \
+xfonts-intl-chinese-big \
+fonts-arphic-bkai00mp \
+fonts-arphic-bsmi00lp \
+fonts-arphic-gbsn00lp \
+fonts-arphic-gkai00mp \
+fonts-arphic-ukai \
+fonts-arphic-uming \
+chromium \
+rxvt \
+rxvt-ml \
+rxvt-unicode \
+numlockx \
+vim \
+shutter \
+
+
+echo "
+export LC_ALL=zh_TW.UTF-8
+export LANG=zh_TW.UTF-8
+export LANGUAGE=zh_TW.UTF-8" >> /home/$username/.bashrc
+
+echo "
+export LC_ALL=zh_TW.UTF-8
+export LANG=zh_TW.UTF-8
+export LANGUAGE=zh_TW.UTF-8" >> /root/.bashrc
+
+dpkg-reconfigure locales
+
+mkdir /home/$username/bin
+
+echo "
+urxvt -fn \"10x20,xft:AR PL UMing\" -fg lightgray -bg black -tr -sh 14 -bc +sb" >/home/$username/bin/urxvt12x24
+
+chmod +x /home/$username/bin/urxvt12x24
+chown -R $username:$username /home/$username/bin
+
+echo "
+export PATH=$PATH:~/home/$username/bin" >> /home/$username/.bashrc
+
+mkdir /home/$username/.icewm
+
+echo "
+prog urxvt12x24 xterm_16x16 urxvt12x24
+prog chromium xterm_16x16 chromium" > /home/$username/.icewm/menu
+
+apt-get install -y nvidia-kernel-dkms
+
+
+echo "
+blacklist ast" >> /etc/modprobe.d/nvidia-blacklists-nouveau.conf 
+
+cd /root
+X -configure
+sed -i 's/nouveau/nvidia/g' /root/xorg.conf.new 
+cp /root/xorg.conf.new /etc/X11/xorg.conf
+
+##	EDA install	###
+
+mkdir /home/$username/cadence
+cd /home/sam/cadence
+
+wget ftp://120.117.72.71/eda/IC/IC_06.17.709_linux_1of4.tgz
+wget ftp://120.117.72.71/eda/IC/IC_06.17.709_linux_2of4.tgz
+wget ftp://120.117.72.71/eda/IC/IC_06.17.709_linux_3of4.tgz
+wget ftp://120.117.72.71/eda/IC/IC_06.17.709_linux_4of4.tgz
+
+tar -xvaf IC_06.17.709_linux_1of4.tgz
+tar -xvaf IC_06.17.709_linux_2of4.tgz
+tar -xvaf IC_06.17.709_linux_3of4.tgz
+tar -xvaf IC_06.17.709_linux_4of4.tgz
+
+chown -R $username:$username /home/$username/cadence/IC
+mkdir /opt/EDA
+
+mv /home/$username/cadence/IC /opt/EDA
+
+##	License Server	###
+echo "
+140.112.20.58 lsntu
+140.115.71.66 lsncu
+140.113.202.151 lsnctu
+140.120.90.46 lsnchu
+140.116.49.24 lsncku
+$ip $hostname" >> /etc/hosts
+
+##	i386	###
+dpkg --add-architecture i386
+
+apt-get update -y
+apt-get upgrade -y
+
+apt-get install -y \
+libc6:i386 \
+csh \
+ksh \
+
+ldd /opt/EDA/IC/cur/tools/bin/clsbd
+sleep 3
+
+echo "
+Virtuoso=\"/opt/EDA/IC/cur/tools/bin\"
+icfb=\"/opt/EDA/IC/cur/tools/dfII/bin\"
+
+Hspice=\"/opt/EDA/hspice\"
+Hspicebin=\"/opt/EDA/hspice/cur/hspice/bin\"
+
+CosmosScope=\"/opt/EDA/cosmos_scope\"
+CosmosScopebin=\"/opt/EDA/cosmos_scope/cur/ai_bin\"
+
+Lakerbin=\"/opt/EDA/laker/cur/bin\"
+
+Calibrebin=\"/opt/EDA/calibre/cur/bin\"
+
+LakerADPbin=\"/opt/EDA/adp/cur/bin\"
+
+export PATH=\$PATH:\$Virtuoso:\$icfb:\$Hspice:\$Hspicebin:\$CosmosScopebin:\$Lakerbin:\$Calibrebin:\$LakerADPbin
+
+#Mentor License Setup
+MGLS_LICENSE_FILE=1717@lsncku
+MGC_HOME=/opt/EDA/calibre/cur
+CALIBRE_HOME=/opt/EDA/calibre/cur
+MGC_TMPDIR=/tmp
+MGC_LOCATION_MAP=NO_MAP
+export MGC_HOME CALIBRE_HOME MGC_TMPDIR MGC_LOCATION_MAP MGLS_LICENSE_FILE
+
+
+CDS_INST_DIR=/opt/EDA/IC/cur
+CDS_ROOT=/opt/EDA/IC/cur
+CDS_Netlisting_Mode=Analo
+#XKEYSYMDB=$CDS_INST_DIR/share/cdssetup/tdmX11/XKeysymDB 
+XNLSPATH=$CDS_INST_DIR/share/cdssetup/tdmX11/nls
+CDS_AUTO_64BIT=ALL
+OA_HOME=/opt/EDA/IC/cur/oa
+export CDS_INST_DIR CDS_ROOT CDS_Netlisting_Mode CDSDIR XNLSPATH CDS_AUTO_64BIT OA_HOME 
+LM_LICENSE_FILE=5280@lsncku:26585@lsncku:1717@lsncku:5229@lsncku
+export LM_LICENSE_FILE" >> /home/$username/.bashrc
+
+##	fix sysname	###
+echo "Red Hat Enterprise Linux Server release 7.4 (Maipo)" >> /etc/redhat-release
+cd /opt/EDA/IC/cur/oa/bin
+rm -f sysname
+wget http://flip.stust.edu.tw/download/1361376/1f5ebdd5265f8f1336f5b29f9d2ccbec/sysname
+
+chown $username:$username sysname
+chmod a+x sysname
+
+
+###	CIC setting	###
+cd /home/$username
+wget ftp://120.117.72.71/eda/cic0181p6m.tar.xz
+
+tar -xvaf cic0181p6m.tar.xz
+chown -R $username:$username opt/
+cd opt/
+mv PROCESS /opt
+cd /home/$username
+mkdir model lib lklib simulation
+chown -R $username:$username model \
+lib \
+lklib \
+simulation \
+
+cp -Ra /opt/PROCESS/CIC0181P6M/virtuoso/display.drf /home/$username
+cp -Ra /opt/PROCESS/CIC0181P6M/virtuoso/cic18.tf /home/$username/model
+cp -Ra /opt/PROCESS/CIC0181P6M/model/cic018.l /home/$username/model
+
+##	HSPICE	###
+wget ftp://120.117.72.71/eda/HSPICE/hspice_2018.09_linux.tgz
+tar xfva hspice_2018.09_linux.tgz -C /opt/EDA
+cd /opt/EDA/hspice/cur/hspice/bin
+./config -r /opt/EDA/hspice/cur
+echo ".lib '/home/herman/model/cic018.l' TT" >> /home/$username/model/1p6mcic018.include
+chown $username:$username /home/$username/model/1p6mcic018.include
+
+############################################################################################
+###########################################################################################
+#	testing	    ##
+
+##	CosMos scope	###
+cd /home/$username
+wget ftp://120.117.72.71/eda/cosmos_scope_2017.12_linux.tgz
+tar -xvaf cosmos_scope_2017.12_linux.tgz
+chown -R $username:$username cosmos_scope
+mv cosmos_scope /opt/EDA
+
+##	Laker	###
+cd /home/$username
+wget http://ftp.tw.debian.org/debian/pool/main/libp/libpng/libpng12-0_1.2.50-2+deb8u3_amd64.deb
+dpkg -i libpng12-0_1.2.50-2+deb8u3_amd64.deb 
+wget ftp://120.117.72.71/eda/laker_2018.12_liunux.tgz
+tar -xvaf laker_2018.12_liunux.tgz
+chown -R $username:$username laker
+mv laker /opt/EDA
+
+##	Calibre	    ###
+cd /home/$username
+wget http://120.117.72.71/p503/calibre/calibre_2018.2_24.18_linux_CentOS_RHEL6.x_1of3.tgz
+wget http://120.117.72.71/p503/calibre/calibre_2018.2_24.18_linux_CentOS_RHEL6.x_2of3.tgz
+wget http://120.117.72.71/p503/calibre/calibre_2018.2_24.18_linux_CentOS_RHEL6.x_3of3.tgz
+tar -xvaf calibre_2018.2_24.18_linux_CentOS_RHEL6.x_1of3.tgz
+tar -xvaf calibre_2018.2_24.18_linux_CentOS_RHEL6.x_2of3.tgz
+tar -xvaf calibre_2018.2_24.18_linux_CentOS_RHEL6.x_3of3.tgz
+chown -R $username:$username calibre
+mv calibre /opt/EDA
+
+##	Create Virtuodo with Calibre	###
+cd /home/$username
+echo "
+load( strcat( getShellEnvVar(\"CALIBRE_HOME\")
+\"/shared/pkgs/icv/tools/queryskl/calibre.skl\" ))" > .cdsinit
+
+
+##	Laker ADP	###
+cd /home/$username
+wget http://ftp.tw.debian.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb
+wget ftp://120.117.72.71/eda/adp_2016.12-3_linux.tgz
+dpkg -i libxp6_1.0.2-2_amd64.deb
+tar -xvaf adp_2016.12-3_linux.tgz
+chown $username:$username adp
+mv adp /opt/EDA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
